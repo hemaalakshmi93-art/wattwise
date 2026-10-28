@@ -51,6 +51,26 @@ def create_app(test_config=None):
 
     app.register_blueprint(bp)
 
+    if os.environ.get("WATTWISE_SEED_DEMO") == "1":
+        from .demo import seed_demo
+
+        with app.app_context():
+            seed_demo(database.get_db())
+
+    # Serve the built React app (frontend/dist) from the same server when it exists.
+    dist = Path(os.environ.get("WATTWISE_FRONTEND_DIST", BASE_DIR.parent / "frontend" / "dist"))
+    if dist.is_dir():
+        from flask import send_from_directory
+
+        @app.get("/", defaults={"path": ""})
+        @app.get("/<path:path>")
+        def frontend(path):
+            if path.startswith("api/"):
+                return jsonify({"error": {"message": "Resource not found."}}), 404
+            if path and (dist / path).is_file():
+                return send_from_directory(dist, path)
+            return send_from_directory(dist, "index.html")
+
     @app.after_request
     def add_cors(resp):
         resp.headers["Access-Control-Allow-Origin"] = app.config["CORS_ORIGIN"]

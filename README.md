@@ -135,3 +135,21 @@ wattwise/
 | Leaderboard from stored records | `test_leaderboard_computed_from_records` |
 | Solar responds to inputs | `test_solar_endpoint_and_recalculation` |
 | Clear errors on bad input | `test_invalid_readings_rejected`, `test_solar_validation` |
+
+## Deploying (one service, one link)
+
+Flask serves the built React app and the API together, so you deploy a single service.
+
+**Render (Docker, free tier):** push to GitHub, then Render > New > Web Service > pick the repo >
+Runtime **Docker**. Add environment variables: `WATTWISE_CORS_ORIGIN` = your Render URL,
+`WATTWISE_SEED_DEMO` = `1` (optional, loads labelled demo households). Deploy.
+
+**Data note:** free hosting has no permanent disk, so the SQLite file resets on redeploy or
+restart. A paid persistent disk mounted at `/data` keeps it. Set `WATTWISE_SEED_DEMO=1` so the
+leaderboard is not empty after a reset.
+
+**Without Docker:** build command `pip install -r backend/requirements.txt && cd frontend && npm ci && npm run build`,
+start command `cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1` (needs Node on the build image).
+
+Run locally the same way: `cd frontend && npm run build`, then `cd backend && python app.py` and open
+http://127.0.0.1:5001. The app has no login, so anyone with the link can see and switch profiles.
